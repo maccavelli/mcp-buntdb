@@ -1,6 +1,6 @@
 module github.com/maccavelli/mcp-buntdb
 
-go 1.26.5
+go 1.26.6
 
 require (
 	github.com/tidwall/buntdb v1.3.2
