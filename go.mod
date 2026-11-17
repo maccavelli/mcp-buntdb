@@ -1,6 +1,8 @@
 module github.com/maccavelli/mcp-buntdb
 
-go 1.26.6
+go 1.26.11
+
+toolchain go1.27.4
 
 require (
 	github.com/tidwall/buntdb v1.3.2

@@ -89,7 +89,7 @@ In MCP environments, servers store state (session metadata, auth tokens, scraper
 
 ## Installation
 
-Requires **Go 1.26.6** or later.
+Requires **Go 1.26.11** or later; built and tested with Go 1.27.4.
 
 ```bash
 go get github.com/maccavelli/mcp-buntdb
