@@ -255,3 +255,45 @@ under `GOTOOLCHAIN=go1.26.11`.
 **Consequence.** The Confirmation gains: CI on `main` passes after this
 change, with the `golangci-lint` step on v2.15.0. This amends E2 and
 Decision Outcome item 2; it rewrites nothing above.
+
+### A2 (2026-11-17): a CI job on the floor
+
+**What this corrects.** The Consequences name "CI has no floor job" as a
+gap and say this record does not add one. The owner has since ruled.
+
+**The ruling.** Asked: none of the repositories moved to floor `go
+1.26.11` today has a CI job that builds and tests on the floor version;
+CI builds with the toolchain, Go 1.27.4, so the floor is proven only by a
+one-off local run; go-selfupdate-lib and acp-go-sdk2 already have a floor
+job; should the others get one? Chosen label: "Only for the two
+libraries (mcplib, mcp-buntdb)". The floor matters most where other
+programs depend on it. This repository is one of the two.
+
+**The change.** One job, `go126`, is added to `.github/workflows/ci.yml`,
+in the form of go-selfupdate-lib's job of that name: `go-version:
+'1.26.11'` (a literal, not `go-version-file`), `GOTOOLCHAIN: local`, a
+step asserting `go env GOVERSION` is `go1.26.11`, then `go build ./...`,
+`go vet ./...` and `go test ./...` on Linux. The literal keeps
+`setup-go` from reading the `toolchain` line, and `GOTOOLCHAIN: local`
+stops the `go` command switching to 1.27.4; without both, the job would
+test 1.27.4 and prove nothing about the floor (go-selfupdate-lib's
+0029-MADR makes the same point: the job must test the floor `go.mod`
+declares). Its actions are pinned by tag, as this workflow already pins
+them. The `validate` job is unchanged.
+
+**What it proves, and what it does not.** It proves that the module
+builds and vets under Go 1.26.11 on Linux. **This repository has no test
+files**, so `go test ./...` reports "[no test files]" and proves only that
+the package compiles under the floor; no test was invented. It does not
+exercise Windows (`flock_windows.go`) or any behaviour, and it does not
+run `govulncheck`.
+
+**Proof.** The job's steps pass locally under `GOTOOLCHAIN=go1.26.11
+GOPROXY=off` (exit 0), and `actionlint` is clean, but a runner installing
+1.26.11 is not shown locally: **the first CI run on the push is the
+proof.** The CI run on `a453c3b` (A1's fix) passed, with `setup-go`
+installing Go 1.27.4 and the lint step installing golangci-lint v2.15.0
+and reporting "0 issues."
+
+The "CI has no floor job" gap is closed by this amendment once that run
+passes. Nothing above is rewritten.

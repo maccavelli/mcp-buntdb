@@ -188,3 +188,31 @@ as the only `golangci-lint@` pin in `ci.yml`): exit 0 on the tree, and
 exit 1 on a scratch copy with the pin set back to v2.13.1
 ("`.github/workflows/ci.yml`: golangci-lint pin is ['v2.13.1'], want
 ['v2.15.0']").
+
+### A2 (2026-11-17): the floor job
+
+**Decision.** The owner's ruling, label "Only for the two libraries
+(mcplib, mcp-buntdb)": add a CI job on the floor. MADR amendment A2 in
+`0001-MADR-move-toolchain-to-go-1-27-4-and-floor-to-1-26-11.md` records
+it. This is a scope addition, not a failure.
+
+**Added to scope.** `.github/workflows/ci.yml`, one new job `go126`
+(`go-version: '1.26.11'`, `GOTOOLCHAIN: local`, the `GOVERSION` test,
+`go build ./...`, `go vet ./...`, `go test ./...`; actions by tag). The
+Out of scope line "A floor job in CI" no longer holds.
+
+**Checks run.**
+
+| Check | Exit | Result |
+| :--- | :--- | :--- |
+| the job's steps under `GOTOOLCHAIN=go1.26.11 GOPROXY=off` on this Mac | 0 | "[no test files]" |
+| `actionlint .github/workflows/ci.yml` | 0 | clean |
+| version-agreement check, extended: `go126`'s `go-version` equals `go.mod`'s `go` line, its `GOVERSION` test names it, `GOTOOLCHAIN: local`, no `go-version-file` in it | 0 | "0 failures" |
+| the same on a scratch copy with `go-version: '1.26.10'` | 1 | "go126 go-version is ['1.26.10'], want ['1.26.11']" |
+| the same with the test set to `go1.26.10` | 1 | "go126 GOVERSION test is not go1.26.11" |
+
+The `validate` job's `go.mod`-driven CI run on `a453c3b` passed (run
+44162759936): `setup-go` printed "Successfully set up Go version 1.27.4",
+and the lint step ended "0 issues.". The first CI run on this change's
+push is the proof of `go126` on a runner. With no test files, the job
+proves only that the module builds and vets under 1.26.11 on Linux.
