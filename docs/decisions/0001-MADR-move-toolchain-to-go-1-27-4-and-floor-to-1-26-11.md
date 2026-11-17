@@ -209,3 +209,49 @@ None here: this is the repository's first record (E6). It amends nothing.
 
 * [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859).
 * [Go downloads](https://go.dev/dl/): `go1.27.4`, `go1.26.11`.
+
+## Amendments
+
+### A1 (2026-11-17): CI's golangci-lint pin moves to v2.15.0
+
+**What this corrects.** Decision Outcome item 2 says CI is unchanged, and
+E2 says CI builds with 1.27.4 after the change. The second held; the
+first did not. The pair was pushed to `main` as `54b8ebf` (records) and
+`e9b1ad8` (`go.mod`, `README.md`). CI on `e9b1ad8` **failed**, in the
+step "Run go install
+github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1"
+(`.github/workflows/ci.yml:20`, exit code 2). The log reads
+"could not import os (/opt/hostedtoolcache/go/1.27.4/x64/src/os/dir.go:8:2
+...", "could not load export data", "export data version 5 is greater
+th[an the maximum supported version 4]" and "typecheck: 4". It also shows
+the runner's Go is `1.27.4`: the `toolchain` line took effect there,
+which settles the first not-verified item of E2. CI on `54b8ebf`, which
+changed Markdown only, passed. So the first push left `main` red until
+the change below lands.
+
+**Cause.** golangci-lint v2.13.1, built with Go 1.27.4 by that same step,
+cannot read Go 1.27.4's export data; per the coordinator's finding in a
+sibling repository, v2.14.0 and v2.15.0 can. Reproduced here: v2.13.1
+under Go 1.27.4 exits 2 with four "export data version" typecheck errors
+on this repository; v2.15.0 reports 0 issues (A1's change, below). It was
+not foreseen: the common brief and the survey looked at Go versions, not
+at lint tool versions, and the local `make lint` passed because the local
+binary is newer than CI's pin.
+
+**The owner's ruling.** Chosen label: "v2.15.0 everywhere, in each
+repository's Go-pins record (Recommended)". Asked: six repositories pin
+v2.13.1 in CI, which cannot type-check under Go 1.27.4; each record is
+amended to include the CI pin; any new finding the newer linter reports
+is brought to the owner with the code rather than suppressed; this
+repository gets a follow-up commit under its record.
+
+**The change.** `.github/workflows/ci.yml:20`:
+`golangci-lint@v2.13.1` becomes `golangci-lint@v2.15.0`, by tag, as the
+line already pinned by tag. Nothing else in the workflow moves. No other
+file states the lint version: the Makefile's install hint says `@latest`
+and stays. `make lint` with v2.15.0 reports 0 issues under Go 1.27.4 and
+under `GOTOOLCHAIN=go1.26.11`.
+
+**Consequence.** The Confirmation gains: CI on `main` passes after this
+change, with the `golangci-lint` step on v2.15.0. This amends E2 and
+Decision Outcome item 2; it rewrites nothing above.

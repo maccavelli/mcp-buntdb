@@ -148,4 +148,43 @@ shown locally; CI's `setup-go` log will show it.
 
 ## Deviations
 
-None.
+### D1 (2026-11-17): CI's golangci-lint pin (v2.13.1) fails under Go 1.27.4
+
+**Found.** After the pair and the change were pushed (`54b8ebf`,
+`e9b1ad8`), CI on `e9b1ad8` failed in the step that installs
+`golangci-lint@v2.13.1` (`.github/workflows/ci.yml:20`): "could not import
+os (/opt/hostedtoolcache/go/1.27.4/x64/src/os/dir.go:8:2 ...", "export
+data version 5 is greater th[an the maximum supported version 4]",
+"typecheck: 4", "Process completed with exit code 2". The scope table said
+`ci.yml` was not changed; that was wrong. Not foreseen: the brief and the
+survey did not look at lint tool versions, and the local `make lint` uses
+a newer binary. `main` was red from that push until this lands. CI on
+`54b8ebf` (Markdown only) passed.
+
+**Decision.** The owner's ruling, label "v2.15.0 everywhere, in each
+repository's Go-pins record (Recommended)": pin v2.15.0, bring any new
+finding to the owner rather than suppress it. MADR amendment A1 in
+`0001-MADR-move-toolchain-to-go-1-27-4-and-floor-to-1-26-11.md` records
+it.
+
+**Added to scope.** `.github/workflows/ci.yml:20`, only:
+`golangci-lint@v2.13.1` becomes `golangci-lint@v2.15.0` (pinned by tag, as
+before). A follow-up commit follows the coordinator's push.
+
+**Checks run (this Mac, exit status before any filter).**
+
+| Check | Start | End | Exit | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| `go install ...golangci-lint@v2.15.0` into a scratch `GOBIN`, `GOTOOLCHAIN=local` (the module cache lacked it, so the proxy was used for this download) | 13:47:38 | 13:47:43 | 0 | "golangci-lint has version 2.15.0 built with go1.27.4" |
+| `make lint` with that binary, Go 1.27.4, `GOPROXY=off` | 13:47:49 | 13:47:56 | 0 | "0 issues." |
+| the same under `GOTOOLCHAIN=go1.26.11` | 13:47:56 | 13:48:01 | 0 | "0 issues." |
+| `make lint` with v2.13.1 installed the same way, Go 1.27.4 (reproduction) | after 13:48 | | 2 | "typecheck: 4", "export data version" |
+| `actionlint .github/workflows/ci.yml` | | | 0 | clean |
+| `make vet` | | | 0 | clean |
+
+No finding was reported by v2.15.0, so nothing was fixed, suppressed or
+excluded. The version-agreement check gained the lint pin (`v2.15.0`
+as the only `golangci-lint@` pin in `ci.yml`): exit 0 on the tree, and
+exit 1 on a scratch copy with the pin set back to v2.13.1
+("`.github/workflows/ci.yml`: golangci-lint pin is ['v2.13.1'], want
+['v2.15.0']").
